@@ -29,7 +29,8 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5173",
   "https://iexpertpos.com.au",
-  "https://iexpertpos.store"
+  "https://iexpertpos.store",
+  "https://iexpertpos.com.au"
 ];
 
 app.use(
