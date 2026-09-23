@@ -745,7 +745,7 @@ const getSoldQuantityReport = async (req, res) => {
 //Australia time zone
 const getMultiSaleSummary = async (req, res) => {
   try {
-    const { shop_id, customer_id, start_date, end_date } = req.query;
+    const { shop_id, customer_id, start_date, end_date, filter } = req.query;
 
     const now = DateTime.now().setZone('Australia/Melbourne');
 
@@ -824,47 +824,46 @@ const getMultiSaleSummary = async (req, res) => {
       }, {});
     };
 
-    // Main Results
-    const results = {
-      today: await fetchSummaryData(startOfToday, endOfToday),
-      yesterday: await fetchSummaryData(startOfYesterday, endOfYesterday),
-      last7Days: await fetchSummaryData(startOfLast7Days, endOfToday),
-      thisMonth: await fetchSummaryData(startOfThisMonth, endOfThisMonth),
-      lastMonth: await fetchSummaryData(startOfLastMonth, endOfLastMonth),
-      thisYear: await fetchSummaryData(startOfThisYear, endOfThisYear),
-      lastYear: await fetchSummaryData(startOfLastYear, endOfLastYear),
-      all: await fetchSummaryData(startOfAll, endOfToday),
-      custom: startOfCustom && endOfCustom ? await fetchSummaryData(startOfCustom, endOfCustom) : {}
-    };
+    // Main Results based on filter
+    const results = {};
+    const selectedFilter = filter || 'today';
 
-    // Totals Calculation
-    const totals = {};
-
-    for (const shopName in results.all) {
-      const shopData = results.all[shopName];
-      totals[shopName] = {
-        repairs: shopData.repairs,
-        products: shopData.products,
-        numInvoices: shopData.numInvoices,
-        totalAmount: shopData.totalAmount,
-      };
-    }
-
-    for (const shopName in results.today) {
-      const todayData = results.today[shopName];
-
-      if (totals[shopName]) {
-        totals[shopName].repairs += todayData.repairs || 0;
-        totals[shopName].products += todayData.products || 0;
-        totals[shopName].numInvoices += todayData.numInvoices || 0;
-        totals[shopName].totalAmount += todayData.totalAmount || 0;
-      }
+    switch (selectedFilter) {
+      case 'today':
+        results.today = await fetchSummaryData(startOfToday, endOfToday);
+        break;
+      case 'yesterday':
+        results.yesterday = await fetchSummaryData(startOfYesterday, endOfYesterday);
+        break;
+      case 'last7Days':
+        results.last7Days = await fetchSummaryData(startOfLast7Days, endOfToday);
+        break;
+      case 'thisMonth':
+        results.thisMonth = await fetchSummaryData(startOfThisMonth, endOfThisMonth);
+        break;
+      case 'lastMonth':
+        results.lastMonth = await fetchSummaryData(startOfLastMonth, endOfLastMonth);
+        break;
+      case 'thisYear':
+        results.thisYear = await fetchSummaryData(startOfThisYear, endOfThisYear);
+        break;
+      case 'lastYear':
+        results.lastYear = await fetchSummaryData(startOfLastYear, endOfLastYear);
+        break;
+      case 'all':
+        results.all = await fetchSummaryData(startOfAll, endOfToday);
+        break;
+      case 'custom':
+        results.custom = startOfCustom && endOfCustom ? await fetchSummaryData(startOfCustom, endOfCustom) : {};
+        break;
+      default:
+        results[selectedFilter] = await fetchSummaryData(startOfToday, endOfToday);
     }
 
     const finalResult = {
       shops: shopList,
       summaryData: results,
-      totals: totals
+      totals: {} // Unused by frontend, removed heavy calculation
     };
 
     return res.status(200).json({
